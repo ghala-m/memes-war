@@ -131,7 +131,27 @@ const dict = {
     rule1: "+١٠ إذا فاز الإيموجي الخاص بك",
     rule2: "+٥ لكل صوت يحصل عليه اختيارك",
     rule3: "+٣ إذا صوّت للإيموجي الفائز",
+    questions: "الأسئلة",
+    chooseQuestions: "اختر الأسئلة (اختياري)",
+    questionBank: "بنك الأسئلة",
+    myLibrary: "مكتبتي",
+    addQuestion: "إضافة سؤال",
+    newQuestion: "سؤال جديد",
+    english: "إنجليزي",
+    arabic: "عربي",
+    save: "حفظ",
+    cancel: "إلغاء",
+    edit: "تعديل",
+    remove: "حذف",
+    selected: "مختار",
+    clearSelection: "مسح الكل",
+    noSaved: "لا توجد أسئلة محفوظة — أضف سؤالاً بالأعلى.",
+    randomNote: "بقية الجولات تستخدم أسئلة عشوائية.",
+    hostOnly: "المضيف فقط يحدد الأسئلة.",
+    saved: "تم الحفظ",
+    done: "تم",
   },
+
 } as const;
 
 export type TKey = keyof (typeof dict)["en"];
