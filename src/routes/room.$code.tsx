@@ -8,16 +8,23 @@ import { LangToggle } from "@/components/LangToggle";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { EMOJI_SET, MIN_PLAYERS, type GameState } from "@/lib/game-shared";
-import { getNickname, getToken, setNickname, setToken } from "@/lib/player-session";
+import { getHostKey, getNickname, getToken, setNickname, setToken } from "@/lib/player-session";
 import {
   castVoteFn,
+  createPromptFn,
+  deletePromptFn,
+  getQueuedPromptsFn,
   getStateFn,
   hostActionFn,
   joinRoomFn,
+  listPromptsFn,
+  setQueuedPromptsFn,
   startGameFn,
   submitEmojiFn,
   touchPlayerFn,
+  updatePromptFn,
 } from "@/lib/game.functions";
+
 
 export const Route = createFileRoute("/room/$code")({
   head: ({ params }) => ({
