@@ -62,18 +62,24 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_public: boolean
+          owner_key: string | null
           text_ar: string
           text_en: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_public?: boolean
+          owner_key?: string | null
           text_ar: string
           text_en: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_public?: boolean
+          owner_key?: string | null
           text_ar?: string
           text_en?: string
         }
@@ -91,6 +97,7 @@ export type Database = {
           phase: string
           phase_ends_at: string | null
           prompt_id: string | null
+          queued_prompt_ids: string[]
           status: string
           total_rounds: number
           updated_at: string
@@ -108,6 +115,7 @@ export type Database = {
           phase?: string
           phase_ends_at?: string | null
           prompt_id?: string | null
+          queued_prompt_ids?: string[]
           status?: string
           total_rounds?: number
           updated_at?: string
@@ -125,6 +133,7 @@ export type Database = {
           phase?: string
           phase_ends_at?: string | null
           prompt_id?: string | null
+          queued_prompt_ids?: string[]
           status?: string
           total_rounds?: number
           updated_at?: string
