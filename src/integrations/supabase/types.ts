@@ -14,7 +14,227 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      players: {
+        Row: {
+          created_at: string
+          id: string
+          is_host: boolean
+          kicked: boolean
+          last_seen_at: string
+          nickname: string
+          room_id: string
+          score: number
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_host?: boolean
+          kicked?: boolean
+          last_seen_at?: string
+          nickname: string
+          room_id: string
+          score?: number
+          token: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_host?: boolean
+          kicked?: boolean
+          last_seen_at?: string
+          nickname?: string
+          room_id?: string
+          score?: number
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompts: {
+        Row: {
+          created_at: string
+          id: string
+          text_ar: string
+          text_en: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          text_ar: string
+          text_en: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          text_ar?: string
+          text_en?: string
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          code: string
+          created_at: string
+          current_round: number
+          id: string
+          language: string
+          paused: boolean
+          paused_remaining_ms: number | null
+          phase: string
+          phase_ends_at: string | null
+          prompt_id: string | null
+          status: string
+          total_rounds: number
+          updated_at: string
+          used_prompt_ids: string[]
+          version: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_round?: number
+          id?: string
+          language?: string
+          paused?: boolean
+          paused_remaining_ms?: number | null
+          phase?: string
+          phase_ends_at?: string | null
+          prompt_id?: string | null
+          status?: string
+          total_rounds?: number
+          updated_at?: string
+          used_prompt_ids?: string[]
+          version?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_round?: number
+          id?: string
+          language?: string
+          paused?: boolean
+          paused_remaining_ms?: number | null
+          phase?: string
+          phase_ends_at?: string | null
+          prompt_id?: string | null
+          status?: string
+          total_rounds?: number
+          updated_at?: string
+          used_prompt_ids?: string[]
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rooms_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      submissions: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          player_id: string
+          room_id: string
+          round: number
+          vote_count: number
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          player_id: string
+          room_id: string
+          round: number
+          vote_count?: number
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          player_id?: string
+          room_id?: string
+          round?: number
+          vote_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "submissions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "submissions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votes: {
+        Row: {
+          created_at: string
+          id: string
+          room_id: string
+          round: number
+          submission_id: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_id: string
+          round: number
+          submission_id: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_id?: string
+          round?: number
+          submission_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
