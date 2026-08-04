@@ -36,6 +36,7 @@ type RoomRow = {
   total_rounds: number;
   prompt_id: string | null;
   used_prompt_ids: string[];
+  queued_prompt_ids: string[];
   phase_ends_at: string | null;
   paused: boolean;
   paused_remaining_ms: number | null;
