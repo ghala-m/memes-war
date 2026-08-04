@@ -143,12 +143,17 @@ export async function joinRoom(input: { code: string; nickname: string }) {
 }
 
 async function pickPrompt(room: RoomRow) {
-  const { data } = await supabaseAdmin.from("prompts").select("id");
+  // Host-selected prompts play first, in the order the host arranged them.
+  const queued = (room.queued_prompt_ids ?? []).filter((id) => !room.used_prompt_ids.includes(id));
+  if (queued.length > 0) return queued[0]!;
+
+  const { data } = await supabaseAdmin.from("prompts").select("id").is("owner_key", null);
   const all = (data ?? []).map((p) => p.id);
   const unused = all.filter((id) => !room.used_prompt_ids.includes(id));
   const pool = unused.length > 0 ? unused : all;
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
 }
+
 
 async function startRound(room: RoomRow, roundNumber: number) {
   const promptId = await pickPrompt(room);
