@@ -5,11 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 6px);
-  --radius-2xl: calc(var(--radius) + 12px);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -29,43 +29,56 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-mint: var(--mint);
+  --color-sky: var(--sky);
+  --color-lemon: var(--lemon);
   --font-display: var(--font-display);
   --font-sans: var(--font-body);
+  --font-pixel: var(--font-pixel);
 }
 
 :root {
-  --radius: 1rem;
-  --font-display: "Bricolage Grotesque", "Cairo", system-ui, sans-serif;
+  --radius: 0px;
+  --font-display: "Press Start 2P", "Cairo", system-ui, sans-serif;
+  --font-pixel: "VT323", "Cairo", monospace;
   --font-body: "Cairo", system-ui, sans-serif;
 
-  --background: oklch(0.17 0.045 274);
-  --foreground: oklch(0.97 0.01 260);
-  --card: oklch(0.23 0.05 275);
-  --card-foreground: oklch(0.97 0.01 260);
-  --popover: oklch(0.23 0.05 275);
-  --popover-foreground: oklch(0.97 0.01 260);
-  --primary: oklch(0.88 0.19 100);
-  --primary-foreground: oklch(0.2 0.05 275);
-  --secondary: oklch(0.29 0.06 276);
-  --secondary-foreground: oklch(0.97 0.01 260);
-  --muted: oklch(0.27 0.05 276);
-  --muted-foreground: oklch(0.74 0.03 270);
-  --accent: oklch(0.8 0.15 195);
-  --accent-foreground: oklch(0.2 0.05 275);
-  --destructive: oklch(0.68 0.21 20);
-  --destructive-foreground: oklch(0.98 0.01 260);
-  --border: oklch(0.34 0.06 277);
-  --input: oklch(0.3 0.06 277);
-  --ring: oklch(0.88 0.19 100);
+  /* Pastel 16-bit / Y2K palette */
+  --background: oklch(0.93 0.045 340);
+  --foreground: oklch(0.34 0.07 300);
+  --card: oklch(0.985 0.008 320);
+  --card-foreground: oklch(0.34 0.07 300);
+  --popover: oklch(0.985 0.008 320);
+  --popover-foreground: oklch(0.34 0.07 300);
+  --primary: oklch(0.79 0.15 355);
+  --primary-foreground: oklch(0.28 0.07 320);
+  --secondary: oklch(0.93 0.04 300);
+  --secondary-foreground: oklch(0.34 0.07 300);
+  --muted: oklch(0.95 0.02 320);
+  --muted-foreground: oklch(0.55 0.05 305);
+  --accent: oklch(0.85 0.11 205);
+  --accent-foreground: oklch(0.28 0.07 320);
+  --destructive: oklch(0.72 0.17 25);
+  --destructive-foreground: oklch(0.99 0.01 320);
+  --border: oklch(0.42 0.09 305);
+  --input: oklch(0.99 0.005 320);
+  --ring: oklch(0.72 0.16 330);
 
-  --glow-primary: 0 0 0 3px oklch(0.88 0.19 100 / 0.25), 0 12px 40px -12px oklch(0.88 0.19 100 / 0.6);
-  --shadow-card: 0 20px 50px -25px oklch(0 0 0 / 0.8);
-  --gradient-stage: radial-gradient(
-      1000px 600px at 10% -10%,
-      oklch(0.5 0.19 330 / 0.35),
-      transparent 60%
-    ),
-    radial-gradient(900px 500px at 100% 0%, oklch(0.6 0.16 200 / 0.28), transparent 55%);
+  --mint: oklch(0.89 0.09 165);
+  --sky: oklch(0.87 0.08 235);
+  --lemon: oklch(0.93 0.11 100);
+
+  --pixel-border: 3px solid var(--border);
+  --pixel-shadow: 4px 4px 0 0 var(--border);
+  --pixel-shadow-lg: 6px 6px 0 0 var(--border);
+
+  --gradient-stage: linear-gradient(
+    180deg,
+    oklch(0.94 0.05 340) 0%,
+    oklch(0.92 0.05 320) 34%,
+    oklch(0.92 0.05 260) 62%,
+    oklch(0.93 0.05 220) 100%
+  );
 }
 
 @layer base {
@@ -75,29 +88,82 @@
 
   body {
     background-color: var(--color-background);
-    background-image: var(--gradient-stage);
+    background-image:
+      radial-gradient(circle at 18% 22%, oklch(1 0 0 / 0.65) 0 40px, transparent 41px),
+      radial-gradient(circle at 26% 26%, oklch(1 0 0 / 0.6) 0 30px, transparent 31px),
+      radial-gradient(circle at 82% 14%, oklch(1 0 0 / 0.55) 0 34px, transparent 35px),
+      var(--gradient-stage);
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: var(--font-body);
+    image-rendering: pixelated;
   }
 
   h1,
   h2,
   h3 {
     font-family: var(--font-display);
-    letter-spacing: -0.02em;
+    letter-spacing: 0.02em;
+    line-height: 1.5;
   }
 
-  [dir="rtl"] body {
+  [dir="rtl"] body,
+  [dir="rtl"] h1,
+  [dir="rtl"] h2,
+  [dir="rtl"] h3 {
+    font-family: var(--font-body);
+  }
+
+  input,
+  select,
+  textarea {
     font-family: var(--font-body);
   }
 }
 
+/* Retro window panel with hard pixel edges */
 @utility panel {
   background-color: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-card);
+  border: var(--pixel-border);
+  border-radius: 0;
+  box-shadow: var(--pixel-shadow-lg);
+}
+
+@utility panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-bottom: var(--pixel-border);
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@utility pixel-frame {
+  border: var(--pixel-border);
+  border-radius: 0;
+  box-shadow: var(--pixel-shadow);
+  background-color: var(--card);
+}
+
+@utility scanlines {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      oklch(0.42 0.09 305 / 0.06) 0 2px,
+      transparent 2px 4px
+    );
+  }
 }
 
 @utility btn-base {
@@ -105,28 +171,37 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   font-weight: 700;
   font-family: var(--font-display);
+  font-size: 0.65rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: var(--pixel-border);
+  box-shadow: var(--pixel-shadow);
   transition:
-    transform 0.12s ease,
-    filter 0.2s ease,
-    background-color 0.2s ease;
+    transform 0.08s steps(2),
+    box-shadow 0.08s steps(2),
+    background-color 0.15s ease;
   cursor: pointer;
 }
 
 @utility btn-primary {
   background-color: var(--primary);
   color: var(--primary-foreground);
-  padding: 0.85rem 1.6rem;
-  font-size: 1.05rem;
-  box-shadow: 0 10px 30px -12px oklch(0.88 0.19 100 / 0.7);
+  padding: 0.85rem 1.4rem;
 }
+
 @utility btn-ghost {
   background-color: var(--secondary);
   color: var(--secondary-foreground);
-  padding: 0.6rem 1.1rem;
-  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+}
+
+@utility btn-accent {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  padding: 0.6rem 1rem;
 }
 
 @utility emoji-tile {
@@ -135,35 +210,60 @@
   justify-content: center;
   aspect-ratio: 1 / 1;
   font-size: clamp(1.7rem, 6vw, 2.6rem);
-  border-radius: var(--radius-lg);
-  background-color: var(--secondary);
-  border: 2px solid var(--border);
+  border-radius: 0;
+  background-color: var(--card);
+  border: var(--pixel-border);
+  box-shadow: var(--pixel-shadow);
   transition:
-    transform 0.12s ease,
-    border-color 0.15s ease,
+    transform 0.08s steps(2),
+    box-shadow 0.08s steps(2),
     background-color 0.15s ease;
   cursor: pointer;
 }
 
 @utility tile-selected {
-  border-color: var(--primary);
-  background-color: color-mix(in oklab, var(--primary) 22%, var(--card));
-  box-shadow: var(--glow-primary);
+  background-color: var(--lemon);
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 var(--border);
+}
+
+@utility pixel-input {
+  border: var(--pixel-border);
+  border-radius: 0;
+  background-color: var(--input);
+  box-shadow: inset 2px 2px 0 0 oklch(0.42 0.09 305 / 0.18);
+  padding: 0.7rem 0.85rem;
+  color: var(--foreground);
+  width: 100%;
+}
+
+@utility pixel-code {
+  font-family: var(--font-pixel);
+  letter-spacing: 0.35em;
+  line-height: 1;
+}
+
+@utility pixel-timer {
+  font-family: var(--font-pixel);
+  font-size: 1.6rem;
+  line-height: 1;
 }
 
 @layer base {
   button:disabled {
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: 0.5;
+    box-shadow: 2px 2px 0 0 var(--border);
   }
   button:not(:disabled):hover {
-    filter: brightness(1.06);
+    filter: brightness(1.04);
   }
   button:not(:disabled):active {
-    transform: translateY(1px) scale(0.99);
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 0 var(--border);
   }
   :focus-visible {
-    outline: 3px solid var(--ring);
-    outline-offset: 2px;
+    outline: 3px dashed var(--ring);
+    outline-offset: 3px;
   }
 }
