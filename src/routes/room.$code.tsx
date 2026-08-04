@@ -297,6 +297,9 @@ function GameScreen({
         {state.phase === "lobby" && (
           <Lobby
             state={state}
+            code={code}
+            token={token}
+
             onStart={async () => {
               try {
                 await start({ data: { code, token } });
