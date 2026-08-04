@@ -15,3 +15,14 @@ export function getNickname(): string {
 export function setNickname(name: string) {
   window.localStorage.setItem("mw_nickname", name);
 }
+
+// Persistent, device-local key that owns a host's saved question library.
+export function getHostKey(): string {
+  if (typeof window === "undefined") return "";
+  let key = window.localStorage.getItem("mw_host_key");
+  if (!key) {
+    key = crypto.randomUUID().replace(/-/g, "");
+    window.localStorage.setItem("mw_host_key", key);
+  }
+  return key;
+}
