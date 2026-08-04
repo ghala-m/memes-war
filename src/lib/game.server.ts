@@ -61,6 +61,19 @@ async function bumpRoom(room: RoomRow, patch: Record<string, unknown>) {
   if (error) throw new Error(error.message);
 }
 
+// Atomically claim a phase transition so that concurrent clients cannot run the
+// same transition (and its scoring side effects) more than once.
+async function claimTransition(room: RoomRow, patch: Record<string, unknown>) {
+  const { data, error } = await supabaseAdmin
+    .from("rooms")
+    .update({ ...patch, version: room.version + 1, updated_at: new Date().toISOString() })
+    .eq("id", room.id)
+    .eq("version", room.version)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return (data ?? []).length > 0;
+}
+
 async function loadPlayer(roomId: string, token: string) {
   const { data } = await supabaseAdmin
     .from("players")
@@ -138,7 +151,7 @@ async function pickPrompt(room: RoomRow) {
 
 async function startRound(room: RoomRow, roundNumber: number) {
   const promptId = await pickPrompt(room);
-  await bumpRoom(room, {
+  return claimTransition(room, {
     status: "playing",
     phase: "prompt",
     current_round: roundNumber,
@@ -289,15 +302,25 @@ export async function advanceIfDue(code: string) {
 async function advancePhase(room: RoomRow) {
   switch (room.phase) {
     case "prompt":
-      await bumpRoom(room, { phase: "submit", phase_ends_at: inSeconds(PHASE_DURATIONS['submit']!) });
+      await claimTransition(room, {
+        phase: "submit",
+        phase_ends_at: inSeconds(PHASE_DURATIONS['submit']!),
+      });
       return;
     case "submit":
-      await bumpRoom(room, { phase: "reveal", phase_ends_at: inSeconds(PHASE_DURATIONS['reveal']!) });
+      await claimTransition(room, {
+        phase: "reveal",
+        phase_ends_at: inSeconds(PHASE_DURATIONS['reveal']!),
+      });
       return;
-    case "vote":
-      await scoreRound(room);
-      await bumpRoom(room, { phase: "score", phase_ends_at: inSeconds(PHASE_DURATIONS['score']!) });
+    case "vote": {
+      const claimed = await claimTransition(room, {
+        phase: "score",
+        phase_ends_at: inSeconds(PHASE_DURATIONS['score']!),
+      });
+      if (claimed) await scoreRound(room);
       return;
+    }
     case "reveal": {
       const { count } = await supabaseAdmin
         .from("submissions")
@@ -305,19 +328,25 @@ async function advancePhase(room: RoomRow) {
         .eq("room_id", room.id)
         .eq("round", room.current_round);
       if ((count ?? 0) < 2) {
-        await scoreRound(room);
-        await bumpRoom(room, { phase: "score", phase_ends_at: inSeconds(PHASE_DURATIONS['score']!) });
+        const claimed = await claimTransition(room, {
+          phase: "score",
+          phase_ends_at: inSeconds(PHASE_DURATIONS['score']!),
+        });
+        if (claimed) await scoreRound(room);
         return;
       }
-      await bumpRoom(room, { phase: "vote", phase_ends_at: inSeconds(PHASE_DURATIONS['vote']!) });
+      await claimTransition(room, {
+        phase: "vote",
+        phase_ends_at: inSeconds(PHASE_DURATIONS['vote']!),
+      });
       return;
     }
     case "score": {
       if (room.current_round >= room.total_rounds) {
-        await bumpRoom(room, { phase: "final", status: "final", phase_ends_at: null });
+        await claimTransition(room, { phase: "final", status: "final", phase_ends_at: null });
         return;
       }
-      await startRound({ ...room, version: room.version }, room.current_round + 1);
+      await startRound(room, room.current_round + 1);
       return;
     }
     default:
