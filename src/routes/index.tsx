@@ -76,7 +76,7 @@ function Index() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-5 py-6">
       <header className="flex items-center justify-between">
-        <span className="font-display text-lg font-extrabold tracking-tight">
+        <span className="font-display text-[0.7rem] tracking-widest uppercase">
           MEMES<span className="text-primary">WAR</span>
         </span>
         <LangToggle />
@@ -89,89 +89,97 @@ function Index() {
           <span className="rotate-[10deg]">💀</span>
           <span className="translate-y-1">🫡</span>
         </div>
-        <h1 className="font-display text-5xl leading-[0.95] font-extrabold sm:text-7xl">
+        <h1 className="font-display text-2xl leading-relaxed sm:text-4xl">
           MEMES <span className="text-primary">WAR</span>
         </h1>
-        <p className="mt-4 text-lg font-semibold text-accent">{t("tagline")}</p>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground">{t("subtitle")}</p>
+        <p className="font-display mt-5 text-[0.6rem] tracking-wide text-accent-foreground">
+          {t("tagline")}
+        </p>
+        <p className="mt-3 max-w-md text-sm text-muted-foreground">{t("subtitle")}</p>
 
-        <div className="panel mt-8 w-full max-w-md p-5 text-start">
-          {mode === "home" && (
-            <div className="flex flex-col gap-3">
-              <button className="btn-base btn-primary w-full" onClick={() => setMode("create")}>
-                {t("createRoom")}
-              </button>
-              <button className="btn-base btn-ghost w-full" onClick={() => setMode("join")}>
-                {t("joinRoom")}
-              </button>
-            </div>
-          )}
-
-          {mode !== "home" && (
-            <div className="flex flex-col gap-4">
-              <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                {t("nickname")}
-                <input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={20}
-                  className="rounded-lg border border-input bg-secondary px-3 py-2.5 text-base outline-none focus:border-primary"
-                  placeholder="Sara"
-                />
-              </label>
-
-              {mode === "join" && (
-                <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                  {t("roomCode")}
-                  <input
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                    className="rounded-lg border border-input bg-secondary px-3 py-2.5 font-display text-2xl tracking-[0.35em] uppercase outline-none focus:border-primary"
-                    placeholder="ABC123"
-                  />
-                </label>
-              )}
-
-              {mode === "create" && (
-                <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                  {t("rounds")}: {rounds}
-                  <input
-                    type="range"
-                    min={3}
-                    max={10}
-                    value={rounds}
-                    onChange={(e) => setRounds(Number(e.target.value))}
-                    className="accent-primary"
-                  />
-                </label>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  className="btn-base btn-ghost"
-                  onClick={() => setMode("home")}
-                  disabled={busy}
-                >
-                  {t("back")}
+        <div className="panel scanlines mt-8 w-full max-w-md text-start">
+          <div className="panel-title">
+            <span>{mode === "home" ? "start.exe" : mode === "create" ? "create.exe" : "join.exe"}</span>
+            <span aria-hidden className="font-pixel text-sm">
+              ▪ ▫ ✕
+            </span>
+          </div>
+          <div className="p-5">
+            {mode === "home" && (
+              <div className="flex flex-col gap-3">
+                <button className="btn-base btn-primary w-full" onClick={() => setMode("create")}>
+                  {t("createRoom")}
                 </button>
-                <button
-                  className="btn-base btn-primary flex-1"
-                  disabled={busy}
-                  onClick={mode === "create" ? handleCreate : handleJoin}
-                >
-                  {mode === "create" ? t("create") : t("join")}
+                <button className="btn-base btn-ghost w-full" onClick={() => setMode("join")}>
+                  {t("joinRoom")}
                 </button>
               </div>
-            </div>
-          )}
+            )}
+
+            {mode !== "home" && (
+              <div className="flex flex-col gap-4">
+                <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                  {t("nickname")}
+                  <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={20}
+                    className="pixel-input text-base outline-none"
+                    placeholder="Sara"
+                  />
+                </label>
+
+                {mode === "join" && (
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                    {t("roomCode")}
+                    <input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.toUpperCase())}
+                      maxLength={6}
+                      className="pixel-input pixel-code text-3xl uppercase outline-none"
+                      placeholder="ABC123"
+                    />
+                  </label>
+                )}
+
+                {mode === "create" && (
+                  <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                    {t("rounds")}: <span className="font-pixel text-xl">{rounds}</span>
+                    <input
+                      type="range"
+                      min={3}
+                      max={10}
+                      value={rounds}
+                      onChange={(e) => setRounds(Number(e.target.value))}
+                      className="accent-primary"
+                    />
+                  </label>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    className="btn-base btn-ghost"
+                    onClick={() => setMode("home")}
+                    disabled={busy}
+                  >
+                    {t("back")}
+                  </button>
+                  <button
+                    className="btn-base btn-primary flex-1"
+                    disabled={busy}
+                    onClick={mode === "create" ? handleCreate : handleJoin}
+                  >
+                    {mode === "create" ? t("create") : t("join")}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="mt-8 w-full max-w-md text-start">
-          <h2 className="font-display text-sm font-extrabold tracking-wide uppercase">
-            {t("scoring")}
-          </h2>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+        <div className="pixel-frame mt-8 w-full max-w-md p-4 text-start">
+          <h2 className="font-display text-[0.6rem] tracking-wide uppercase">⚠ {t("scoring")}</h2>
+          <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
             <li>🏆 {t("rule1")}</li>
             <li>🗳️ {t("rule2")}</li>
             <li>🎯 {t("rule3")}</li>
@@ -181,3 +189,4 @@ function Index() {
     </main>
   );
 }
+

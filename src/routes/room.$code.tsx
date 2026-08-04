@@ -8,16 +8,23 @@ import { LangToggle } from "@/components/LangToggle";
 import { useI18n } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { EMOJI_SET, MIN_PLAYERS, type GameState } from "@/lib/game-shared";
-import { getNickname, getToken, setNickname, setToken } from "@/lib/player-session";
+import { getHostKey, getNickname, getToken, setNickname, setToken } from "@/lib/player-session";
 import {
   castVoteFn,
+  createPromptFn,
+  deletePromptFn,
+  getQueuedPromptsFn,
   getStateFn,
   hostActionFn,
   joinRoomFn,
+  listPromptsFn,
+  setQueuedPromptsFn,
   startGameFn,
   submitEmojiFn,
   touchPlayerFn,
+  updatePromptFn,
 } from "@/lib/game.functions";
+
 
 export const Route = createFileRoute("/room/$code")({
   head: ({ params }) => ({
@@ -290,6 +297,9 @@ function GameScreen({
         {state.phase === "lobby" && (
           <Lobby
             state={state}
+            code={code}
+            token={token}
+
             onStart={async () => {
               try {
                 await start({ data: { code, token } });
@@ -509,16 +519,28 @@ function GameScreen({
   );
 }
 
-function Lobby({ state, onStart }: { state: GameState; onStart: () => void }) {
+function Lobby({
+  state,
+  code,
+  token,
+  onStart,
+}: {
+  state: GameState;
+  code: string;
+  token: string;
+  onStart: () => void;
+}) {
   const { t } = useI18n();
   const me = state.me!;
   const [copied, setCopied] = useState(false);
 
   return (
     <div className="text-center">
-      <p className="text-sm font-bold tracking-widest text-accent uppercase">{t("shareCode")}</p>
+      <p className="font-display text-[0.6rem] tracking-widest text-accent-foreground uppercase">
+        {t("shareCode")}
+      </p>
       <button
-        className="mt-3 font-display text-6xl font-extrabold tracking-[0.2em] text-primary sm:text-7xl"
+        className="pixel-frame pixel-code mt-3 bg-card px-5 py-4 text-4xl text-primary sm:text-6xl"
         onClick={() => {
           void navigator.clipboard.writeText(state.code);
           setCopied(true);
@@ -528,7 +550,9 @@ function Lobby({ state, onStart }: { state: GameState; onStart: () => void }) {
       >
         {state.code}
       </button>
-      <p className="mt-1 text-xs text-muted-foreground">{copied ? "✓" : "tap to copy"}</p>
+      <p className="mt-2 text-xs text-muted-foreground">{copied ? "✓" : "tap to copy"}</p>
+
+      {me.isHost && <PromptPicker code={code} token={token} />}
 
       {me.isHost ? (
         <button
@@ -544,3 +568,211 @@ function Lobby({ state, onStart }: { state: GameState; onStart: () => void }) {
     </div>
   );
 }
+
+type PromptItem = { id: string; text_en: string; text_ar: string; owner_key: string | null };
+
+function PromptPicker({ code, token }: { code: string; token: string }) {
+  const { t, lang } = useI18n();
+  const listPrompts = useServerFn(listPromptsFn);
+  const createPrompt = useServerFn(createPromptFn);
+  const updatePrompt = useServerFn(updatePromptFn);
+  const deletePrompt = useServerFn(deletePromptFn);
+  const setQueued = useServerFn(setQueuedPromptsFn);
+  const getQueued = useServerFn(getQueuedPromptsFn);
+
+  const [open, setOpen] = useState(false);
+  const [ownerKey, setOwnerKey] = useState("");
+  const [bank, setBank] = useState<PromptItem[]>([]);
+  const [mine, setMine] = useState<PromptItem[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [en, setEn] = useState("");
+  const [ar, setAr] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setOwnerKey(getHostKey());
+  }, []);
+
+  const load = useCallback(async () => {
+    if (!ownerKey) return;
+    const [lib, queued] = await Promise.all([
+      listPrompts({ data: { ownerKey } }),
+      getQueued({ data: { code } }),
+    ]);
+    setBank(lib.bank as PromptItem[]);
+    setMine(lib.mine as PromptItem[]);
+    setSelected((queued as PromptItem[]).map((p) => p.id));
+  }, [ownerKey, listPrompts, getQueued, code]);
+
+  useEffect(() => {
+    if (open) void load();
+  }, [open, load]);
+
+  const label = (p: PromptItem) => (lang === "ar" ? p.text_ar : p.text_en);
+
+  async function persist(ids: string[]) {
+    setSelected(ids);
+    try {
+      await setQueued({ data: { code, token, promptIds: ids } });
+    } catch {
+      toast.error(t("hostOnly"));
+    }
+  }
+
+  function toggle(id: string) {
+    void persist(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  }
+
+  async function saveQuestion() {
+    if (!en.trim() && !ar.trim()) return;
+    setBusy(true);
+    try {
+      if (editingId) {
+        await updatePrompt({ data: { ownerKey, id: editingId, textEn: en, textAr: ar } });
+      } else {
+        await createPrompt({ data: { ownerKey, textEn: en, textAr: ar } });
+      }
+      setEn("");
+      setAr("");
+      setEditingId(null);
+      await load();
+      toast.success(t("saved"));
+    } catch {
+      toast.error("Could not save the question.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto mt-6 w-full max-w-xl text-start">
+      <button className="btn-base btn-accent w-full" onClick={() => setOpen((v) => !v)}>
+        📝 {t("chooseQuestions")} {selected.length > 0 ? `(${selected.length})` : ""}
+      </button>
+
+      {open && (
+        <div className="panel mt-3">
+          <div className="panel-title">
+            <span>questions.exe</span>
+            <button className="font-pixel text-sm" onClick={() => setOpen(false)} aria-label="close">
+              ✕
+            </button>
+          </div>
+
+          <div className="space-y-4 p-4">
+            <div className="pixel-frame p-3">
+              <p className="font-display text-[0.55rem] uppercase">
+                {editingId ? t("edit") : t("newQuestion")}
+              </p>
+              <input
+                className="pixel-input mt-2 text-sm outline-none"
+                placeholder={t("english")}
+                maxLength={200}
+                value={en}
+                onChange={(e) => setEn(e.target.value)}
+              />
+              <input
+                className="pixel-input mt-2 text-sm outline-none"
+                placeholder={t("arabic")}
+                dir="rtl"
+                maxLength={200}
+                value={ar}
+                onChange={(e) => setAr(e.target.value)}
+              />
+              <div className="mt-2 flex gap-2">
+                <button className="btn-base btn-primary text-xs" disabled={busy} onClick={saveQuestion}>
+                  {t("save")}
+                </button>
+                {editingId && (
+                  <button
+                    className="btn-base btn-ghost text-xs"
+                    onClick={() => {
+                      setEditingId(null);
+                      setEn("");
+                      setAr("");
+                    }}
+                  >
+                    {t("cancel")}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <p className="font-display text-[0.55rem] uppercase">{t("myLibrary")}</p>
+              {mine.length === 0 ? (
+                <p className="mt-2 text-xs text-muted-foreground">{t("noSaved")}</p>
+              ) : (
+                <ul className="mt-2 space-y-1.5">
+                  {mine.map((p) => (
+                    <li key={p.id} className="pixel-frame flex items-center gap-2 p-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selected.includes(p.id)}
+                        onChange={() => toggle(p.id)}
+                        aria-label={label(p)}
+                      />
+                      <span className="flex-1">{label(p)}</span>
+                      <button
+                        className="text-[10px] font-bold"
+                        onClick={() => {
+                          setEditingId(p.id);
+                          setEn(p.text_en);
+                          setAr(p.text_ar);
+                        }}
+                      >
+                        {t("edit")}
+                      </button>
+                      <button
+                        className="text-[10px] font-bold text-destructive"
+                        onClick={async () => {
+                          await deletePrompt({ data: { ownerKey, id: p.id } });
+                          await persist(selected.filter((x) => x !== p.id));
+                          await load();
+                        }}
+                      >
+                        {t("remove")}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <p className="font-display text-[0.55rem] uppercase">{t("questionBank")}</p>
+              <ul className="mt-2 max-h-56 space-y-1.5 overflow-y-auto pe-1">
+                {bank.map((p) => (
+                  <li key={p.id} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(p.id)}
+                      onChange={() => toggle(p.id)}
+                      aria-label={label(p)}
+                    />
+                    <span>{label(p)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 border-t-[3px] border-border pt-3">
+              <span className="font-pixel text-lg">
+                {selected.length} {t("selected")}
+              </span>
+              <button className="btn-base btn-ghost text-xs" onClick={() => void persist([])}>
+                {t("clearSelection")}
+              </button>
+              <button className="btn-base btn-primary ms-auto text-xs" onClick={() => setOpen(false)}>
+                {t("done")}
+              </button>
+              <p className="w-full text-[10px] text-muted-foreground">{t("randomNote")}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+

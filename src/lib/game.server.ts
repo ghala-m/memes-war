@@ -36,6 +36,7 @@ type RoomRow = {
   total_rounds: number;
   prompt_id: string | null;
   used_prompt_ids: string[];
+  queued_prompt_ids: string[];
   phase_ends_at: string | null;
   paused: boolean;
   paused_remaining_ms: number | null;
@@ -142,12 +143,17 @@ export async function joinRoom(input: { code: string; nickname: string }) {
 }
 
 async function pickPrompt(room: RoomRow) {
-  const { data } = await supabaseAdmin.from("prompts").select("id");
+  // Host-selected prompts play first, in the order the host arranged them.
+  const queued = (room.queued_prompt_ids ?? []).filter((id) => !room.used_prompt_ids.includes(id));
+  if (queued.length > 0) return queued[0]!;
+
+  const { data } = await supabaseAdmin.from("prompts").select("id").is("owner_key", null);
   const all = (data ?? []).map((p) => p.id);
   const unused = all.filter((id) => !room.used_prompt_ids.includes(id));
   const pool = unused.length > 0 ? unused : all;
   return pool[Math.floor(Math.random() * pool.length)] ?? null;
 }
+
 
 async function startRound(room: RoomRow, roundNumber: number) {
   const promptId = await pickPrompt(room);
@@ -519,4 +525,113 @@ export async function touchPlayer(input: { code: string; token: string }) {
     .update({ last_seen_at: new Date().toISOString() })
     .eq("room_id", room.id)
     .eq("token", input.token);
+}
+
+/* ---------------- Host prompt library ---------------- */
+
+export type PromptRow = {
+  id: string;
+  text_en: string;
+  text_ar: string;
+  owner_key: string | null;
+};
+
+export async function listPrompts(input: { ownerKey: string | null }) {
+  const { data: bank } = await supabaseAdmin
+    .from("prompts")
+    .select("id, text_en, text_ar, owner_key")
+    .is("owner_key", null)
+    .order("created_at");
+
+  let mine: PromptRow[] = [];
+  if (input.ownerKey) {
+    const { data } = await supabaseAdmin
+      .from("prompts")
+      .select("id, text_en, text_ar, owner_key")
+      .eq("owner_key", input.ownerKey)
+      .order("created_at", { ascending: false });
+    mine = (data ?? []) as PromptRow[];
+  }
+  return { bank: (bank ?? []) as PromptRow[], mine };
+}
+
+export async function createPrompt(input: {
+  ownerKey: string;
+  textEn: string;
+  textAr: string;
+}) {
+  const en = input.textEn.trim().slice(0, 200);
+  const ar = input.textAr.trim().slice(0, 200);
+  if (!en && !ar) throw new Error("EMPTY_PROMPT");
+  const { data, error } = await supabaseAdmin
+    .from("prompts")
+    .insert({
+      text_en: en || ar,
+      text_ar: ar || en,
+      owner_key: input.ownerKey,
+      is_public: false,
+    })
+    .select("id, text_en, text_ar, owner_key")
+    .single();
+  if (error) throw new Error(error.message);
+  return data as PromptRow;
+}
+
+export async function updatePrompt(input: {
+  ownerKey: string;
+  id: string;
+  textEn: string;
+  textAr: string;
+}) {
+  const en = input.textEn.trim().slice(0, 200);
+  const ar = input.textAr.trim().slice(0, 200);
+  if (!en && !ar) throw new Error("EMPTY_PROMPT");
+  const { error } = await supabaseAdmin
+    .from("prompts")
+    .update({ text_en: en || ar, text_ar: ar || en })
+    .eq("id", input.id)
+    .eq("owner_key", input.ownerKey);
+  if (error) throw new Error(error.message);
+}
+
+export async function deletePrompt(input: { ownerKey: string; id: string }) {
+  const { error } = await supabaseAdmin
+    .from("prompts")
+    .delete()
+    .eq("id", input.id)
+    .eq("owner_key", input.ownerKey);
+  if (error) throw new Error(error.message);
+}
+
+export async function setQueuedPrompts(input: {
+  code: string;
+  token: string;
+  promptIds: string[];
+}) {
+  const room = await loadRoom(input.code);
+  const me = await loadPlayer(room.id, input.token);
+  if (!me?.is_host) throw new Error("NOT_HOST");
+  if (room.status !== "lobby") throw new Error("GAME_IN_PROGRESS");
+
+  const ids = [...new Set(input.promptIds)].slice(0, 30);
+  let valid: string[] = [];
+  if (ids.length > 0) {
+    const { data } = await supabaseAdmin.from("prompts").select("id").in("id", ids);
+    const found = new Set((data ?? []).map((p) => p.id));
+    valid = ids.filter((id) => found.has(id));
+  }
+  await bumpRoom(room, { queued_prompt_ids: valid });
+  return { queued: valid };
+}
+
+export async function getQueuedPrompts(input: { code: string }) {
+  const room = await loadRoom(input.code);
+  const ids = room.queued_prompt_ids ?? [];
+  if (ids.length === 0) return [] as PromptRow[];
+  const { data } = await supabaseAdmin
+    .from("prompts")
+    .select("id, text_en, text_ar, owner_key")
+    .in("id", ids);
+  const byId = new Map((data ?? []).map((p) => [p.id, p as PromptRow]));
+  return ids.map((id) => byId.get(id)).filter(Boolean) as PromptRow[];
 }
