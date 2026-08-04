@@ -323,7 +323,7 @@ export async function hostAction(input: {
   code: string;
   token: string;
   action: "skip" | "pause" | "resume" | "end" | "kick" | "restart";
-  targetId?: string;
+  targetId?: string | undefined;
 }) {
   const room = await loadRoom(input.code);
   const me = await loadPlayer(room.id, input.token);
