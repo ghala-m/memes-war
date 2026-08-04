@@ -260,18 +260,24 @@ export async function advanceIfDue(code: string) {
 
   const due = new Date(room.phase_ends_at).getTime() <= Date.now();
   let earlyFinish = false;
-  if (!due && room.phase === "submit") {
+  if (!due && (room.phase === "submit" || room.phase === "vote")) {
     const [{ count: playerCount }, { count: subCount }] = await Promise.all([
       supabaseAdmin
         .from("players")
         .select("id", { count: "exact", head: true })
         .eq("room_id", room.id)
         .eq("kicked", false),
-      supabaseAdmin
-        .from("submissions")
-        .select("id", { count: "exact", head: true })
-        .eq("room_id", room.id)
-        .eq("round", room.current_round),
+      room.phase === "submit"
+        ? supabaseAdmin
+            .from("submissions")
+            .select("id", { count: "exact", head: true })
+            .eq("room_id", room.id)
+            .eq("round", room.current_round)
+        : supabaseAdmin
+            .from("votes")
+            .select("id", { count: "exact", head: true })
+            .eq("room_id", room.id)
+            .eq("round", room.current_round),
     ]);
     earlyFinish = (playerCount ?? 0) > 0 && (subCount ?? 0) >= (playerCount ?? 0);
   }
