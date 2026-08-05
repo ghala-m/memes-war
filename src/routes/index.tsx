@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { LangToggle } from "@/components/LangToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useI18n } from "@/lib/i18n";
 import { createRoomFn, joinRoomFn } from "@/lib/game.functions";
 import { setNickname, setToken } from "@/lib/player-session";
@@ -79,7 +80,10 @@ function Index() {
         <span className="font-display text-[0.7rem] tracking-widest uppercase">
           MEMES<span className="text-primary">WAR</span>
         </span>
-        <LangToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LangToggle />
+        </div>
       </header>
 
       <section className="flex flex-1 flex-col items-center justify-center py-10 text-center">
