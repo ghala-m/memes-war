@@ -81,22 +81,7 @@ function RoomPage() {
     retry: false,
   });
 
-  const refetch = query.refetch;
-  useEffect(() => {
-    const channel = supabase
-      .channel(`room-${upper}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "rooms", filter: `code=eq.${upper}` },
-        () => {
-          void refetch();
-        },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [upper, refetch]);
+  // Live updates come from the 1.2s polling above (direct table reads are locked down).
 
   useEffect(() => {
     if (!token) return;
