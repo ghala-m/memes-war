@@ -5,8 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { LangToggle } from "@/components/LangToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useI18n } from "@/lib/i18n";
-import { supabase } from "@/integrations/supabase/client";
 import { EMOJI_SET, MIN_PLAYERS, type GameState } from "@/lib/game-shared";
 import { getHostKey, getNickname, getToken, setNickname, setToken } from "@/lib/player-session";
 import {
@@ -289,6 +289,7 @@ function GameScreen({
               {t("paused")}
             </span>
           )}
+          <ThemeToggle />
           <LangToggle />
         </div>
       </header>
