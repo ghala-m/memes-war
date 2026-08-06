@@ -1,13 +1,87 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
+  HAND_SIZE,
   MAX_PLAYERS,
   MIN_PLAYERS,
   PHASE_DURATIONS,
   type GameState,
+  type MemeCard,
   type Phase,
   type PlayerView,
   type SubmissionView,
 } from "./game-shared";
+
+/* ---------------- Meme deck ---------------- */
+
+const MEME_BUCKET = "memes";
+const SIGNED_TTL_SECONDS = 60 * 60 * 6;
+
+type MemeRow = { id: string; path: string };
+
+let memeCache: { rows: MemeRow[]; at: number } | null = null;
+const signedCache = new Map<string, { url: string; exp: number }>();
+
+async function loadMemes(): Promise<MemeRow[]> {
+  if (memeCache && Date.now() - memeCache.at < 5 * 60 * 1000) return memeCache.rows;
+  const { data, error } = await supabaseAdmin.from("memes").select("id, path").order("path");
+  if (error) throw new Error(error.message);
+  memeCache = { rows: (data ?? []) as MemeRow[], at: Date.now() };
+  return memeCache.rows;
+}
+
+async function signMemes(rows: MemeRow[]): Promise<MemeCard[]> {
+  const now = Date.now();
+  const missing = rows.filter((r) => {
+    const hit = signedCache.get(r.path);
+    return !hit || hit.exp < now + 60_000;
+  });
+  if (missing.length > 0) {
+    const { data } = await supabaseAdmin.storage
+      .from(MEME_BUCKET)
+      .createSignedUrls(
+        missing.map((r) => r.path),
+        SIGNED_TTL_SECONDS,
+      );
+    (data ?? []).forEach((entry) => {
+      if (entry.signedUrl && entry.path) {
+        signedCache.set(entry.path, {
+          url: entry.signedUrl,
+          exp: now + SIGNED_TTL_SECONDS * 1000,
+        });
+      }
+    });
+  }
+  return rows
+    .map((r) => ({ id: r.id, url: signedCache.get(r.path)?.url ?? "" }))
+    .filter((m) => m.url !== "");
+}
+
+// Deterministic per player/round hand so the same cards persist across polls.
+function seededShuffle<T>(items: T[], seed: string) {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const rand = () => {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    return ((h >>> 0) % 100000) / 100000;
+  };
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+async function handFor(roomId: string, round: number, playerId: string) {
+  const memes = await loadMemes();
+  return seededShuffle(memes, `${roomId}:${round}:${playerId}`).slice(0, HAND_SIZE);
+}
+
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
