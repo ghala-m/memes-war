@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      memes: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
+        }
+        Relationships: []
+      }
       players: {
         Row: {
           created_at: string
@@ -155,6 +173,7 @@ export type Database = {
           created_at: string
           emoji: string
           id: string
+          meme_id: string | null
           player_id: string
           room_id: string
           round: number
@@ -162,8 +181,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          emoji: string
+          emoji?: string
           id?: string
+          meme_id?: string | null
           player_id: string
           room_id: string
           round: number
@@ -173,12 +193,20 @@ export type Database = {
           created_at?: string
           emoji?: string
           id?: string
+          meme_id?: string | null
           player_id?: string
           room_id?: string
           round?: number
           vote_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "submissions_meme_id_fkey"
+            columns: ["meme_id"]
+            isOneToOne: false
+            referencedRelation: "memes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "submissions_player_id_fkey"
             columns: ["player_id"]

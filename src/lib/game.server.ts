@@ -1,13 +1,87 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
+  HAND_SIZE,
   MAX_PLAYERS,
   MIN_PLAYERS,
   PHASE_DURATIONS,
   type GameState,
+  type MemeCard,
   type Phase,
   type PlayerView,
   type SubmissionView,
 } from "./game-shared";
+
+/* ---------------- Meme deck ---------------- */
+
+const MEME_BUCKET = "memes";
+const SIGNED_TTL_SECONDS = 60 * 60 * 6;
+
+type MemeRow = { id: string; path: string };
+
+let memeCache: { rows: MemeRow[]; at: number } | null = null;
+const signedCache = new Map<string, { url: string; exp: number }>();
+
+async function loadMemes(): Promise<MemeRow[]> {
+  if (memeCache && Date.now() - memeCache.at < 5 * 60 * 1000) return memeCache.rows;
+  const { data, error } = await supabaseAdmin.from("memes").select("id, path").order("path");
+  if (error) throw new Error(error.message);
+  memeCache = { rows: (data ?? []) as MemeRow[], at: Date.now() };
+  return memeCache.rows;
+}
+
+async function signMemes(rows: MemeRow[]): Promise<MemeCard[]> {
+  const now = Date.now();
+  const missing = rows.filter((r) => {
+    const hit = signedCache.get(r.path);
+    return !hit || hit.exp < now + 60_000;
+  });
+  if (missing.length > 0) {
+    const { data } = await supabaseAdmin.storage
+      .from(MEME_BUCKET)
+      .createSignedUrls(
+        missing.map((r) => r.path),
+        SIGNED_TTL_SECONDS,
+      );
+    (data ?? []).forEach((entry) => {
+      if (entry.signedUrl && entry.path) {
+        signedCache.set(entry.path, {
+          url: entry.signedUrl,
+          exp: now + SIGNED_TTL_SECONDS * 1000,
+        });
+      }
+    });
+  }
+  return rows
+    .map((r) => ({ id: r.id, url: signedCache.get(r.path)?.url ?? "" }))
+    .filter((m) => m.url !== "");
+}
+
+// Deterministic per player/round hand so the same cards persist across polls.
+function seededShuffle<T>(items: T[], seed: string) {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  const rand = () => {
+    h ^= h << 13;
+    h ^= h >>> 17;
+    h ^= h << 5;
+    return ((h >>> 0) % 100000) / 100000;
+  };
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+async function handFor(roomId: string, round: number, playerId: string) {
+  const memes = await loadMemes();
+  return seededShuffle(memes, `${roomId}:${round}:${playerId}`).slice(0, HAND_SIZE);
+}
+
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -182,20 +256,24 @@ export async function startGame(input: { code: string; token: string }) {
   await startRound(room, 1);
 }
 
-export async function submitEmoji(input: { code: string; token: string; emoji: string }) {
+export async function submitMeme(input: { code: string; token: string; memeId: string }) {
   const room = await loadRoom(input.code);
   if (room.phase !== "submit") throw new Error("WRONG_PHASE");
   const me = await loadPlayer(room.id, input.token);
   if (!me || me.kicked) throw new Error("NOT_IN_ROOM");
+  const hand = await handFor(room.id, room.current_round, me.id);
+  if (!hand.some((m) => m.id === input.memeId)) throw new Error("BAD_MEME");
   const { error } = await supabaseAdmin.from("submissions").insert({
     room_id: room.id,
     round: room.current_round,
     player_id: me.id,
-    emoji: input.emoji,
+    emoji: "",
+    meme_id: input.memeId,
   });
   if (error && !error.message.includes("duplicate")) throw new Error(error.message);
   await bumpRoom(room, {});
 }
+
 
 export async function castVote(input: { code: string; token: string; submissionId: string }) {
   const room = await loadRoom(input.code);
@@ -432,7 +510,8 @@ export async function getState(input: { code: string; token: string | null }): P
         .order("created_at"),
       supabaseAdmin
         .from("submissions")
-        .select("id, emoji, player_id, vote_count")
+        .select("id, emoji, meme_id, player_id, vote_count")
+
         .eq("room_id", room.id)
         .eq("round", room.current_round)
         .order("id"),
@@ -474,6 +553,19 @@ export async function getState(input: { code: string; token: string | null }): P
   const max = Math.max(0, ...counts.values());
   const nameById = new Map((playersRaw ?? []).map((p) => [p.id, p.nickname]));
 
+  // Sign only the images that need to be visible right now.
+  const allMemes = await loadMemes();
+  const memeById = new Map(allMemes.map((m) => [m.id, m]));
+  const hand: MemeCard[] =
+    me && phase === "submit"
+      ? await signMemes(await handFor(room.id, room.current_round, me.id))
+      : [];
+  const subMemeRows = showSubs
+    ? (subs.map((s) => memeById.get(s.meme_id ?? "")).filter(Boolean) as typeof allMemes)
+    : [];
+  const signedSubs = subMemeRows.length > 0 ? await signMemes(subMemeRows) : [];
+  const urlByMemeId = new Map([...hand, ...signedSubs].map((m) => [m.id, m.url]));
+
   const submissions: SubmissionView[] = showSubs
     ? subs.map((s) => {
         const count = counts.get(s.id) ?? 0;
@@ -490,6 +582,7 @@ export async function getState(input: { code: string; token: string | null }): P
         return {
           id: s.id,
           emoji: s.emoji,
+          imageUrl: s.meme_id ? (urlByMemeId.get(s.meme_id) ?? null) : null,
           mine: !!me && s.player_id === me.id,
           ownerNickname: revealScores ? (nameById.get(s.player_id) ?? null) : null,
           voteCount: revealScores ? count : null,
@@ -513,9 +606,12 @@ export async function getState(input: { code: string; token: string | null }): P
     me: me ? { id: me.id, nickname: me.nickname, isHost: me.is_host, score: me.score } : null,
     players,
     submissions,
+    hand,
+    myMemeId: mySub?.meme_id ?? null,
     myEmoji: mySub?.emoji ?? null,
     myVoteSubmissionId: myVote?.submission_id ?? null,
   };
+
 }
 
 export async function touchPlayer(input: { code: string; token: string }) {

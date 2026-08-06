@@ -259,6 +259,31 @@
   cursor: pointer;
 }
 
+@utility meme-tile {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 0;
+  background-color: var(--card);
+  border: var(--pixel-border);
+  box-shadow: var(--pixel-shadow);
+  transition:
+    transform 0.08s steps(2),
+    box-shadow 0.08s steps(2);
+  cursor: pointer;
+}
+
+@utility meme-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  image-rendering: auto;
+  display: block;
+}
+
+
 @utility tile-selected {
   background-color: var(--lemon);
   transform: translate(2px, 2px);

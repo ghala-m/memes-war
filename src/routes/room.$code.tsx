@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { LangToggle } from "@/components/LangToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useI18n } from "@/lib/i18n";
-import { EMOJI_SET, MIN_PLAYERS, type GameState } from "@/lib/game-shared";
+import { MIN_PLAYERS, type GameState } from "@/lib/game-shared";
 import { getHostKey, getNickname, getToken, setNickname, setToken } from "@/lib/player-session";
 import {
   castVoteFn,
@@ -20,7 +20,7 @@ import {
   listPromptsFn,
   setQueuedPromptsFn,
   startGameFn,
-  submitEmojiFn,
+  submitMemeFn,
   touchPlayerFn,
   updatePromptFn,
 } from "@/lib/game.functions";
@@ -32,12 +32,12 @@ export const Route = createFileRoute("/room/$code")({
       { title: `Room ${params.code} — Memes War` },
       {
         name: "description",
-        content: `Join Memes War room ${params.code} and battle your friends with emojis in real time.`,
+        content: `Join Memes War room ${params.code} and battle your friends with memes in real time.`,
       },
       { property: "og:title", content: `Memes War — Room ${params.code}` },
       {
         property: "og:description",
-        content: "Pick the emoji. Win the crowd. Join the room and play.",
+        content: "Pick the meme. Win the crowd. Join the room and play.",
       },
       { name: "robots", content: "noindex" },
     ],
@@ -213,7 +213,7 @@ function GameScreen({
   goHome: () => void;
 }) {
   const { t, lang } = useI18n();
-  const submit = useServerFn(submitEmojiFn);
+  const submit = useServerFn(submitMemeFn);
   const vote = useServerFn(castVoteFn);
   const start = useServerFn(startGameFn);
   const host = useServerFn(hostActionFn);
@@ -312,25 +312,25 @@ function GameScreen({
               {prompt}
             </h1>
             <p className="mt-2 text-center text-sm text-muted-foreground">
-              {state.myEmoji ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
+              {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
             </p>
-            <div className="mx-auto mt-6 grid max-w-2xl grid-cols-4 gap-2.5 sm:grid-cols-6 sm:gap-3">
-              {EMOJI_SET.map((emoji) => (
+            <div className="mx-auto mt-6 grid max-w-3xl grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3">
+              {state.hand.map((meme) => (
                 <button
-                  key={emoji}
-                  aria-label={`Emoji ${emoji}`}
-                  disabled={!!state.myEmoji}
-                  className={`emoji-tile ${state.myEmoji === emoji ? "tile-selected" : ""}`}
+                  key={meme.id}
+                  aria-label="Meme card"
+                  disabled={!!state.myMemeId}
+                  className={`meme-tile ${state.myMemeId === meme.id ? "tile-selected" : ""}`}
                   onClick={async () => {
                     try {
-                      await submit({ data: { code, token, emoji } });
+                      await submit({ data: { code, token, memeId: meme.id } });
                       refetch();
                     } catch {
                       toast.error("Too late!");
                     }
                   }}
                 >
-                  {emoji}
+                  <img src={meme.url} alt="Meme option" className="meme-img" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -349,7 +349,7 @@ function GameScreen({
             <p className="mt-2 text-center text-sm font-bold text-accent">
               {state.phase === "reveal" ? t("anonymous") : t("voteNow")}
             </p>
-            <div className="mx-auto mt-6 grid max-w-2xl grid-cols-3 gap-3 sm:grid-cols-4">
+            <div className="mx-auto mt-6 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
               {state.submissions.map((s) => {
                 const selected = state.myVoteSubmissionId === s.id;
                 const disabled = state.phase !== "vote" || s.mine || !!state.myVoteSubmissionId;
@@ -357,8 +357,8 @@ function GameScreen({
                   <button
                     key={s.id}
                     disabled={disabled}
-                    aria-label={s.mine ? `${s.emoji} — ${t("cantVoteSelf")}` : `Vote ${s.emoji}`}
-                    className={`emoji-tile ${selected ? "tile-selected" : ""}`}
+                    aria-label={s.mine ? t("cantVoteSelf") : "Vote for this meme"}
+                    className={`meme-tile ${selected ? "tile-selected" : ""}`}
                     onClick={async () => {
                       try {
                         await vote({ data: { code, token, submissionId: s.id } });
@@ -368,7 +368,13 @@ function GameScreen({
                       }
                     }}
                   >
-                    {s.emoji}
+                    {s.imageUrl ? (
+                      <img src={s.imageUrl} alt="Meme submission" className="meme-img" />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-4xl">
+                        {s.emoji}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -396,7 +402,15 @@ function GameScreen({
                       s.isWinner ? "ring-2 ring-primary" : ""
                     }`}
                   >
-                    <span className="text-4xl">{s.emoji}</span>
+                    {s.imageUrl ? (
+                      <img
+                        src={s.imageUrl}
+                        alt="Winning meme"
+                        className="meme-img aspect-square"
+                      />
+                    ) : (
+                      <span className="text-4xl">{s.emoji}</span>
+                    )}
                     <span className="text-xs font-bold">{s.ownerNickname}</span>
                     <span className="text-xs text-muted-foreground">
                       {s.voteCount} {t("votes")}
