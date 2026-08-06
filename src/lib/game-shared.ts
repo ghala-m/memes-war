@@ -36,7 +36,14 @@ export const EMOJI_SET = [
   "🐐",
 ] as const;
 
+export const HAND_SIZE = 12;
+
 export type Phase = "lobby" | "prompt" | "submit" | "reveal" | "vote" | "score" | "final";
+
+export type MemeCard = {
+  id: string;
+  url: string;
+};
 
 export type PlayerView = {
   id: string;
@@ -50,6 +57,7 @@ export type PlayerView = {
 export type SubmissionView = {
   id: string;
   emoji: string;
+  imageUrl: string | null;
   mine: boolean;
   ownerNickname: string | null;
   voteCount: number | null;
@@ -68,6 +76,9 @@ export type GameState = {
   me: { id: string; nickname: string; isHost: boolean; score: number } | null;
   players: PlayerView[];
   submissions: SubmissionView[];
+  hand: MemeCard[];
+  myMemeId: string | null;
   myEmoji: string | null;
   myVoteSubmissionId: string | null;
 };
+
