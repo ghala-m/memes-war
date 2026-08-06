@@ -37,17 +37,18 @@ export const getStateFn = createServerFn({ method: "POST" })
     return getState(data);
   });
 
-export const submitEmojiFn = createServerFn({ method: "POST" })
+export const submitMemeFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z
-      .object({ code: codeSchema, token: z.string().max(80), emoji: z.string().min(1).max(8) })
+      .object({ code: codeSchema, token: z.string().max(80), memeId: z.string().uuid() })
       .parse(d),
   )
   .handler(async ({ data }) => {
-    const { submitEmoji } = await import("./game.server");
-    await submitEmoji(data);
+    const { submitMeme } = await import("./game.server");
+    await submitMeme(data);
     return { ok: true };
   });
+
 
 export const castVoteFn = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
