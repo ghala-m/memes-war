@@ -510,7 +510,8 @@ export async function getState(input: { code: string; token: string | null }): P
         .order("created_at"),
       supabaseAdmin
         .from("submissions")
-        .select("id, emoji, player_id, vote_count")
+        .select("id, emoji, meme_id, player_id, vote_count")
+
         .eq("room_id", room.id)
         .eq("round", room.current_round)
         .order("id"),
