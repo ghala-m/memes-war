@@ -553,6 +553,19 @@ export async function getState(input: { code: string; token: string | null }): P
   const max = Math.max(0, ...counts.values());
   const nameById = new Map((playersRaw ?? []).map((p) => [p.id, p.nickname]));
 
+  // Sign only the images that need to be visible right now.
+  const allMemes = await loadMemes();
+  const memeById = new Map(allMemes.map((m) => [m.id, m]));
+  const hand: MemeCard[] =
+    me && phase === "submit"
+      ? await signMemes(await handFor(room.id, room.current_round, me.id))
+      : [];
+  const subMemeRows = showSubs
+    ? (subs.map((s) => memeById.get(s.meme_id ?? "")).filter(Boolean) as typeof allMemes)
+    : [];
+  const signedSubs = subMemeRows.length > 0 ? await signMemes(subMemeRows) : [];
+  const urlByMemeId = new Map([...hand, ...signedSubs].map((m) => [m.id, m.url]));
+
   const submissions: SubmissionView[] = showSubs
     ? subs.map((s) => {
         const count = counts.get(s.id) ?? 0;
@@ -569,6 +582,7 @@ export async function getState(input: { code: string; token: string | null }): P
         return {
           id: s.id,
           emoji: s.emoji,
+          imageUrl: s.meme_id ? (urlByMemeId.get(s.meme_id) ?? null) : null,
           mine: !!me && s.player_id === me.id,
           ownerNickname: revealScores ? (nameById.get(s.player_id) ?? null) : null,
           voteCount: revealScores ? count : null,
@@ -592,9 +606,12 @@ export async function getState(input: { code: string; token: string | null }): P
     me: me ? { id: me.id, nickname: me.nickname, isHost: me.is_host, score: me.score } : null,
     players,
     submissions,
+    hand,
+    myMemeId: mySub?.meme_id ?? null,
     myEmoji: mySub?.emoji ?? null,
     myVoteSubmissionId: myVote?.submission_id ?? null,
   };
+
 }
 
 export async function touchPlayer(input: { code: string; token: string }) {
