@@ -256,20 +256,24 @@ export async function startGame(input: { code: string; token: string }) {
   await startRound(room, 1);
 }
 
-export async function submitEmoji(input: { code: string; token: string; emoji: string }) {
+export async function submitMeme(input: { code: string; token: string; memeId: string }) {
   const room = await loadRoom(input.code);
   if (room.phase !== "submit") throw new Error("WRONG_PHASE");
   const me = await loadPlayer(room.id, input.token);
   if (!me || me.kicked) throw new Error("NOT_IN_ROOM");
+  const hand = await handFor(room.id, room.current_round, me.id);
+  if (!hand.some((m) => m.id === input.memeId)) throw new Error("BAD_MEME");
   const { error } = await supabaseAdmin.from("submissions").insert({
     room_id: room.id,
     round: room.current_round,
     player_id: me.id,
-    emoji: input.emoji,
+    emoji: "",
+    meme_id: input.memeId,
   });
   if (error && !error.message.includes("duplicate")) throw new Error(error.message);
   await bumpRoom(room, {});
 }
+
 
 export async function castVote(input: { code: string; token: string; submissionId: string }) {
   const room = await loadRoom(input.code);
