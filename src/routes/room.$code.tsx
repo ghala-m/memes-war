@@ -636,6 +636,22 @@ function Lobby({
       </button>
       <p className="mt-2 text-xs text-muted-foreground">{copied ? "✓" : "tap to copy"}</p>
 
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <p className="font-display text-[0.55rem] tracking-widest text-accent-foreground uppercase">
+          {t("scanToJoin")}
+        </p>
+        <div className="pixel-frame bg-card p-3">
+          <QRCode
+            value={joinUrl}
+            size={148}
+            bgColor="transparent"
+            fgColor="currentColor"
+            className="h-[148px] w-[148px] text-foreground"
+          />
+        </div>
+      </div>
+
+
       {me.isHost && <PromptPicker code={code} token={token} />}
 
       {me.isHost ? (
