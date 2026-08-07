@@ -642,6 +642,7 @@ function Lobby({
       </button>
       <p className="mt-2 text-xs text-muted-foreground">{copied ? "✓" : "tap to copy"}</p>
 
+      {joinUrl && (
       <div className="mt-6 flex flex-col items-center gap-2">
         <p className="font-display text-[0.55rem] tracking-widest text-accent-foreground uppercase">
           {t("scanToJoin")}
@@ -656,6 +657,7 @@ function Lobby({
           />
         </div>
       </div>
+      )}
 
 
       {me.isHost && <PromptPicker code={code} token={token} />}
