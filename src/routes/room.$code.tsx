@@ -314,13 +314,13 @@ function GameScreen({
             <p className="mt-2 text-center text-sm text-muted-foreground">
               {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
             </p>
-            <div className="mx-auto mt-6 grid max-w-3xl grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3">
+            <div className="meme-rail mx-auto mt-6 flex max-w-5xl snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3">
               {state.hand.map((meme) => (
                 <button
                   key={meme.id}
                   aria-label="Meme card"
                   disabled={!!state.myMemeId}
-                  className={`meme-tile ${state.myMemeId === meme.id ? "tile-selected" : ""}`}
+                  className={`meme-tile w-36 shrink-0 snap-start sm:w-44 ${state.myMemeId === meme.id ? "tile-selected" : ""}`}
                   onClick={async () => {
                     try {
                       await submit({ data: { code, token, memeId: meme.id } });
