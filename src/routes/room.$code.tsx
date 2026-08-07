@@ -143,6 +143,65 @@ function CenterMessage({ title, children }: { title: string; children?: React.Re
   );
 }
 
+function MemeBrowser({
+  memes,
+  seconds,
+  onPick,
+  onClose,
+}: {
+  memes: { id: string; url: string }[];
+  seconds: number | null;
+  onPick: (id: string) => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background/98 backdrop-blur">
+      <div className="flex items-center justify-between gap-3 border-b-2 border-border px-4 py-3">
+        <span className="font-display text-[0.6rem] tracking-widest uppercase">
+          {t("browseAll")}
+        </span>
+        <div className="flex items-center gap-2">
+          {seconds !== null && (
+            <span className="rounded-full bg-primary px-3 py-1 font-display text-xs text-primary-foreground tabular-nums">
+              {seconds}s
+            </span>
+          )}
+          <button className="btn-base btn-ghost" onClick={onClose} aria-label={t("cancel")}>
+            ✕
+          </button>
+        </div>
+      </div>
+      <div className="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-3 sm:grid-cols-3 lg:grid-cols-4">
+        {memes.map((meme) => (
+          <button
+            key={meme.id}
+            aria-label="Meme card"
+            className="meme-tile w-full"
+            onClick={() => onPick(meme.id)}
+          >
+            <img src={meme.url} alt="Meme option" className="meme-img" loading="lazy" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+
 function JoinPanel({
   code,
   onJoined,
