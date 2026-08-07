@@ -1,6 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  HAND_SIZE,
   MAX_PLAYERS,
   MIN_PLAYERS,
   PHASE_DURATIONS,
@@ -77,9 +76,10 @@ function seededShuffle<T>(items: T[], seed: string) {
   return out;
 }
 
+// Every player sees the whole meme deck, shuffled uniquely per player/round.
 async function handFor(roomId: string, round: number, playerId: string) {
   const memes = await loadMemes();
-  return seededShuffle(memes, `${roomId}:${round}:${playerId}`).slice(0, HAND_SIZE);
+  return seededShuffle(memes, `${roomId}:${round}:${playerId}`);
 }
 
 

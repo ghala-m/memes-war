@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import QRCode from "react-qr-code";
 
 import { LangToggle } from "@/components/LangToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -143,6 +144,65 @@ function CenterMessage({ title, children }: { title: string; children?: React.Re
   );
 }
 
+function MemeBrowser({
+  memes,
+  seconds,
+  onPick,
+  onClose,
+}: {
+  memes: { id: string; url: string }[];
+  seconds: number | null;
+  onPick: (id: string) => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background/98 backdrop-blur">
+      <div className="flex items-center justify-between gap-3 border-b-2 border-border px-4 py-3">
+        <span className="font-display text-[0.6rem] tracking-widest uppercase">
+          {t("browseAll")}
+        </span>
+        <div className="flex items-center gap-2">
+          {seconds !== null && (
+            <span className="rounded-full bg-primary px-3 py-1 font-display text-xs text-primary-foreground tabular-nums">
+              {seconds}s
+            </span>
+          )}
+          <button className="btn-base btn-ghost" onClick={onClose} aria-label={t("cancel")}>
+            ✕
+          </button>
+        </div>
+      </div>
+      <div className="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-3 sm:grid-cols-3 lg:grid-cols-4">
+        {memes.map((meme) => (
+          <button
+            key={meme.id}
+            aria-label="Meme card"
+            className="meme-tile w-full"
+            onClick={() => onPick(meme.id)}
+          >
+            <img src={meme.url} alt="Meme option" className="meme-img" loading="lazy" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+
 function JoinPanel({
   code,
   onJoined,
@@ -219,6 +279,11 @@ function GameScreen({
   const host = useServerFn(hostActionFn);
   const seconds = useCountdown(state.endsAt);
   const prevPhase = useRef(state.phase);
+  const [browsing, setBrowsing] = useState(false);
+
+  useEffect(() => {
+    if (state.phase !== "submit" || state.myMemeId) setBrowsing(false);
+  }, [state.phase, state.myMemeId]);
 
   useEffect(() => {
     prevPhase.current = state.phase;
@@ -314,6 +379,13 @@ function GameScreen({
             <p className="mt-2 text-center text-sm text-muted-foreground">
               {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
             </p>
+            {!state.myMemeId && (
+              <div className="mt-4 flex justify-center">
+                <button className="btn-base btn-primary" onClick={() => setBrowsing(true)}>
+                  🖼 {t("browseAll")} ({state.hand.length})
+                </button>
+              </div>
+            )}
             <div className="meme-rail mx-auto mt-6 flex max-w-5xl snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3">
               {state.hand.map((meme) => (
                 <button
@@ -338,8 +410,25 @@ function GameScreen({
               {state.players.filter((p) => p.submitted).length}/{state.players.length}{" "}
               {t("submitted")}
             </p>
+            {browsing && (
+              <MemeBrowser
+                memes={state.hand}
+                seconds={seconds}
+                onClose={() => setBrowsing(false)}
+                onPick={async (id) => {
+                  try {
+                    await submit({ data: { code, token, memeId: id } });
+                    setBrowsing(false);
+                    refetch();
+                  } catch {
+                    toast.error("Too late!");
+                  }
+                }}
+              />
+            )}
           </div>
         )}
+
 
         {(state.phase === "reveal" || state.phase === "vote") && (
           <div>
@@ -529,6 +618,11 @@ function Lobby({
   const { t } = useI18n();
   const me = state.me!;
   const [copied, setCopied] = useState(false);
+  const [joinUrl, setJoinUrl] = useState("");
+
+  useEffect(() => {
+    setJoinUrl(`${window.location.origin}/room/${state.code}`);
+  }, [state.code]);
 
   return (
     <div className="text-center">
@@ -547,6 +641,24 @@ function Lobby({
         {state.code}
       </button>
       <p className="mt-2 text-xs text-muted-foreground">{copied ? "✓" : "tap to copy"}</p>
+
+      {joinUrl && (
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <p className="font-display text-[0.55rem] tracking-widest text-accent-foreground uppercase">
+          {t("scanToJoin")}
+        </p>
+        <div className="pixel-frame bg-card p-3">
+          <QRCode
+            value={joinUrl}
+            size={148}
+            bgColor="transparent"
+            fgColor="currentColor"
+            className="h-[148px] w-[148px] text-foreground"
+          />
+        </div>
+      </div>
+      )}
+
 
       {me.isHost && <PromptPicker code={code} token={token} />}
 
