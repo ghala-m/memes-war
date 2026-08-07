@@ -406,9 +406,7 @@ function GameScreen({
                         alt="Winning meme"
                         className="meme-img aspect-square"
                       />
-                    ) : (
-                      <span className="text-4xl">{s.emoji}</span>
-                    )}
+                    ) : null}
                     <span className="text-xs font-bold">{s.ownerNickname}</span>
                     <span className="text-xs text-muted-foreground">
                       {s.voteCount} {t("votes")}
