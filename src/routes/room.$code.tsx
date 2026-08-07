@@ -371,9 +371,7 @@ function GameScreen({
                     {s.imageUrl ? (
                       <img src={s.imageUrl} alt="Meme submission" className="meme-img" />
                     ) : (
-                      <span className="flex h-full items-center justify-center text-4xl">
-                        {s.emoji}
-                      </span>
+                      <span className="block h-full w-full bg-muted" aria-hidden />
                     )}
                   </button>
                 );
