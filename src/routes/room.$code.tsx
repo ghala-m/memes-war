@@ -320,7 +320,7 @@ function GameScreen({
                   key={meme.id}
                   aria-label="Meme card"
                   disabled={!!state.myMemeId}
-                  className={`meme-tile w-36 shrink-0 snap-start sm:w-44 ${state.myMemeId === meme.id ? "tile-selected" : ""}`}
+                  className={`meme-tile w-36 max-w-36 min-w-36 shrink-0 basis-36 snap-start sm:w-44 sm:max-w-44 sm:min-w-44 sm:basis-44 ${state.myMemeId === meme.id ? "tile-selected" : ""}`}
                   onClick={async () => {
                     try {
                       await submit({ data: { code, token, memeId: meme.id } });
