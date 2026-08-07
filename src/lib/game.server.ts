@@ -1,6 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  HAND_SIZE,
   MAX_PLAYERS,
   MIN_PLAYERS,
   PHASE_DURATIONS,
