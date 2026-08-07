@@ -219,6 +219,11 @@ function GameScreen({
   const host = useServerFn(hostActionFn);
   const seconds = useCountdown(state.endsAt);
   const prevPhase = useRef(state.phase);
+  const [browsing, setBrowsing] = useState(false);
+
+  useEffect(() => {
+    if (state.phase !== "submit" || state.myMemeId) setBrowsing(false);
+  }, [state.phase, state.myMemeId]);
 
   useEffect(() => {
     prevPhase.current = state.phase;
