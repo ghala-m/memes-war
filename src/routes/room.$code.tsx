@@ -617,6 +617,11 @@ function Lobby({
   const { t } = useI18n();
   const me = state.me!;
   const [copied, setCopied] = useState(false);
+  const [joinUrl, setJoinUrl] = useState("");
+
+  useEffect(() => {
+    setJoinUrl(`${window.location.origin}/room/${state.code}`);
+  }, [state.code]);
 
   return (
     <div className="text-center">
