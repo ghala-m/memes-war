@@ -319,6 +319,13 @@ function GameScreen({
             <p className="mt-2 text-center text-sm text-muted-foreground">
               {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
             </p>
+            {!state.myMemeId && (
+              <div className="mt-4 flex justify-center">
+                <button className="btn-base btn-primary" onClick={() => setBrowsing(true)}>
+                  🖼 {t("browseAll")} ({state.hand.length})
+                </button>
+              </div>
+            )}
             <div className="meme-rail mx-auto mt-6 flex max-w-5xl snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3">
               {state.hand.map((meme) => (
                 <button
@@ -343,8 +350,25 @@ function GameScreen({
               {state.players.filter((p) => p.submitted).length}/{state.players.length}{" "}
               {t("submitted")}
             </p>
+            {browsing && (
+              <MemeBrowser
+                memes={state.hand}
+                seconds={seconds}
+                onClose={() => setBrowsing(false)}
+                onPick={async (id) => {
+                  try {
+                    await submit({ data: { code, token, memeId: id } });
+                    setBrowsing(false);
+                    refetch();
+                  } catch {
+                    toast.error("Too late!");
+                  }
+                }}
+              />
+            )}
           </div>
         )}
+
 
         {(state.phase === "reveal" || state.phase === "vote") && (
           <div>
