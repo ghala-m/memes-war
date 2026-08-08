@@ -185,22 +185,24 @@ function MemeBrowser({
           </button>
         </div>
       </div>
-      <div className="meme-masonry flex-1 overflow-y-auto p-3">
-        {memes.map((meme) => (
-          <button
-            key={meme.id}
-            aria-label="Meme card"
-            className="meme-tile-free"
-            onClick={() => onPick(meme.id)}
-          >
-            <img
-              src={meme.url}
-              alt="Meme option"
-              className="block h-auto w-full object-contain"
-              loading="lazy"
-            />
-          </button>
-        ))}
+      <div className="flex-1 overflow-x-hidden overflow-y-auto p-3">
+        <div className="meme-masonry">
+          {memes.map((meme) => (
+            <button
+              key={meme.id}
+              aria-label="Meme card"
+              className="meme-tile-free"
+              onClick={() => onPick(meme.id)}
+            >
+              <img
+                src={meme.url}
+                alt="Meme option"
+                className="block h-auto w-full object-contain"
+                loading="lazy"
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -384,33 +386,23 @@ function GameScreen({
             <p className="mt-2 text-center text-sm text-muted-foreground">
               {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
             </p>
-            {!state.myMemeId && (
-              <div className="mt-4 flex justify-center">
+            {!state.myMemeId ? (
+              <div className="mt-6 flex justify-center">
                 <button className="btn-base btn-primary" onClick={() => setBrowsing(true)}>
                   🖼 {t("browseAll")} ({state.hand.length})
                 </button>
               </div>
+            ) : (
+              <div className="mt-6 flex justify-center">
+                <div className="meme-tile tile-selected w-40 max-w-40">
+                  <img
+                    src={state.hand.find((m) => m.id === state.myMemeId)?.url ?? ""}
+                    alt="Your pick"
+                    className="meme-img"
+                  />
+                </div>
+              </div>
             )}
-            <div className="meme-rail mx-auto mt-6 flex max-w-5xl snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-3">
-              {state.hand.map((meme) => (
-                <button
-                  key={meme.id}
-                  aria-label="Meme card"
-                  disabled={!!state.myMemeId}
-                  className={`meme-tile w-36 max-w-36 min-w-36 shrink-0 basis-36 snap-start sm:w-44 sm:max-w-44 sm:min-w-44 sm:basis-44 ${state.myMemeId === meme.id ? "tile-selected" : ""}`}
-                  onClick={async () => {
-                    try {
-                      await submit({ data: { code, token, memeId: meme.id } });
-                      refetch();
-                    } catch {
-                      toast.error("Too late!");
-                    }
-                  }}
-                >
-                  <img src={meme.url} alt="Meme option" className="meme-img" loading="lazy" />
-                </button>
-              ))}
-            </div>
             <p className="mt-4 text-center text-xs text-muted-foreground">
               {state.players.filter((p) => p.submitted).length}/{state.players.length}{" "}
               {t("submitted")}
