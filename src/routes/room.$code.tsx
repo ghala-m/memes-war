@@ -185,15 +185,20 @@ function MemeBrowser({
           </button>
         </div>
       </div>
-      <div className="grid flex-1 grid-cols-2 content-start gap-3 overflow-y-auto p-3 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="meme-masonry flex-1 overflow-y-auto p-3">
         {memes.map((meme) => (
           <button
             key={meme.id}
             aria-label="Meme card"
-            className="meme-tile w-full"
+            className="meme-tile-free"
             onClick={() => onPick(meme.id)}
           >
-            <img src={meme.url} alt="Meme option" className="meme-img" loading="lazy" />
+            <img
+              src={meme.url}
+              alt="Meme option"
+              className="block h-auto w-full object-contain"
+              loading="lazy"
+            />
           </button>
         ))}
       </div>
