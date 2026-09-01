@@ -12,48 +12,27 @@ import {
 
 /* ---------------- Meme deck ---------------- */
 
-const MEME_BUCKET = "memes";
-const SIGNED_TTL_SECONDS = 60 * 60 * 6;
-
-type MemeRow = { id: string; path: string };
+type MemeRow = { id: string; path: string; url: string | null; categories: string[] | null };
 
 let memeCache: { rows: MemeRow[]; at: number } | null = null;
-const signedCache = new Map<string, { url: string; exp: number }>();
 
 async function loadMemes(): Promise<MemeRow[]> {
   if (memeCache && Date.now() - memeCache.at < 5 * 60 * 1000) return memeCache.rows;
-  const { data, error } = await supabaseAdmin.from("memes").select("id, path").order("path");
+  const { data, error } = await supabaseAdmin
+    .from("memes")
+    .select("id, path, url, categories")
+    .order("path");
   if (error) throw new Error(error.message);
   memeCache = { rows: (data ?? []) as MemeRow[], at: Date.now() };
   return memeCache.rows;
 }
 
-async function signMemes(rows: MemeRow[]): Promise<MemeCard[]> {
-  const now = Date.now();
-  const missing = rows.filter((r) => {
-    const hit = signedCache.get(r.path);
-    return !hit || hit.exp < now + 60_000;
-  });
-  if (missing.length > 0) {
-    const { data } = await supabaseAdmin.storage
-      .from(MEME_BUCKET)
-      .createSignedUrls(
-        missing.map((r) => r.path),
-        SIGNED_TTL_SECONDS,
-      );
-    (data ?? []).forEach((entry) => {
-      if (entry.signedUrl && entry.path) {
-        signedCache.set(entry.path, {
-          url: entry.signedUrl,
-          exp: now + SIGNED_TTL_SECONDS * 1000,
-        });
-      }
-    });
-  }
+function toCards(rows: MemeRow[]): MemeCard[] {
   return rows
-    .map((r) => ({ id: r.id, url: signedCache.get(r.path)?.url ?? "" }))
-    .filter((m) => m.url !== "");
+    .filter((r) => !!r.url)
+    .map((r) => ({ id: r.id, url: r.url as string, categories: r.categories ?? [] }));
 }
+
 
 // Deterministic per player/round hand so the same cards persist across polls.
 function seededShuffle<T>(items: T[], seed: string) {
