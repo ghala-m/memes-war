@@ -1,0 +1,1 @@
+grant select, insert, update, delete on public.memes, public.submissions, public.votes to sandbox_exec;
