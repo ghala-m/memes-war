@@ -43,6 +43,7 @@ export type Phase = "lobby" | "prompt" | "submit" | "reveal" | "vote" | "score" 
 export type MemeCard = {
   id: string;
   url: string;
+  categories: string[];
 };
 
 export type PlayerView = {
