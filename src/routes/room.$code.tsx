@@ -144,18 +144,49 @@ function CenterMessage({ title, children }: { title: string; children?: React.Re
   );
 }
 
+const MEME_CATEGORIES = [
+  "trend",
+  "happy",
+  "sad",
+  "angry",
+  "confused",
+  "cringe",
+  "embarrassed",
+  "nervous",
+  "scared",
+  "hah?",
+  "dance & chill",
+] as const;
+
+const CATEGORY_LABELS: Record<string, { en: string; ar: string }> = {
+  all: { en: "All", ar: "الكل" },
+  trend: { en: "Trend", ar: "ترند" },
+  happy: { en: "Happy", ar: "سعيد" },
+  sad: { en: "Sad", ar: "حزين" },
+  angry: { en: "Angry", ar: "غاضب" },
+  confused: { en: "Confused", ar: "محتار" },
+  cringe: { en: "Cringe", ar: "محرج جداً" },
+  embarrassed: { en: "Embarrassed", ar: "مكسوف" },
+  nervous: { en: "Nervous", ar: "متوتر" },
+  scared: { en: "Scared", ar: "خائف" },
+  "hah?": { en: "Hah?", ar: "ها؟" },
+  "dance & chill": { en: "Dance & Chill", ar: "رقص وچيل" },
+};
+
 function MemeBrowser({
   memes,
   seconds,
   onPick,
   onClose,
 }: {
-  memes: { id: string; url: string }[];
+  memes: { id: string; url: string; categories?: string[] }[];
   seconds: number | null;
   onPick: (id: string) => void;
   onClose: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const [cat, setCat] = useState<string>("all");
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -167,6 +198,14 @@ function MemeBrowser({
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+  // Selected category first, then all uncategorized memes at the end of the list.
+  const visible = useMemo(() => {
+    if (cat === "all") return memes;
+    const inCat = memes.filter((m) => (m.categories ?? []).includes(cat));
+    const uncategorized = memes.filter((m) => (m.categories ?? []).length === 0);
+    return [...inCat, ...uncategorized];
+  }, [memes, cat]);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background/98 backdrop-blur">
@@ -185,9 +224,26 @@ function MemeBrowser({
           </button>
         </div>
       </div>
+
+      <div className="flex gap-2 overflow-x-auto border-b-2 border-border px-3 py-2">
+        {["all", ...MEME_CATEGORIES].map((c) => (
+          <button
+            key={c}
+            onClick={() => setCat(c)}
+            className={`shrink-0 rounded-full border-2 border-border px-3 py-1 text-sm font-semibold transition ${
+              cat === c
+                ? "bg-primary text-primary-foreground"
+                : "bg-card text-foreground hover:bg-muted"
+            }`}
+          >
+            {CATEGORY_LABELS[c]?.[lang] ?? c}
+          </button>
+        ))}
+      </div>
+
       <div className="flex-1 overflow-x-hidden overflow-y-auto p-3">
         <div className="meme-masonry">
-          {memes.map((meme) => (
+          {visible.map((meme) => (
             <button
               key={meme.id}
               aria-label="Meme card"
