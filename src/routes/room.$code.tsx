@@ -35,12 +35,13 @@ export const Route = createFileRoute("/room/$code")({
         name: "description",
         content: `Join Memes War room ${params.code} and battle your friends with memes in real time.`,
       },
+      { property: "og:type", content: "website" },
       { property: "og:title", content: `Memes War — Room ${params.code}` },
       {
         property: "og:description",
         content: "Pick the meme. Win the crowd. Join the room and play.",
       },
-      { name: "robots", content: "noindex" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RoomPage,
@@ -440,7 +441,7 @@ function GameScreen({
               {prompt}
             </h1>
             <p className="mt-2 text-center text-sm text-muted-foreground">
-              {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickEmoji")}
+              {state.myMemeId ? `${t("locked")} — ${t("waitingOthers")}` : t("pickMeme")}
             </p>
             {!state.myMemeId ? (
               <div className="mt-6 flex justify-center">
