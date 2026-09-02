@@ -537,12 +537,12 @@ export async function getState(input: { code: string; token: string | null }): P
   const memeById = new Map(allMemes.map((m) => [m.id, m]));
   const hand: MemeCard[] =
     me && phase === "submit"
-      ? await signMemes(await handFor(room.id, room.current_round, me.id))
+      ? toCards(await handFor(room.id, room.current_round, me.id))
       : [];
   const subMemeRows = showSubs
     ? (subs.map((s) => memeById.get(s.meme_id ?? "")).filter(Boolean) as typeof allMemes)
     : [];
-  const signedSubs = subMemeRows.length > 0 ? await signMemes(subMemeRows) : [];
+  const signedSubs = subMemeRows.length > 0 ? toCards(subMemeRows) : [];
   const urlByMemeId = new Map([...hand, ...signedSubs].map((m) => [m.id, m.url]));
 
   const submissions: SubmissionView[] = showSubs

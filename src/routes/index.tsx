@@ -12,17 +12,19 @@ import { setNickname, setToken } from "@/lib/player-session";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Memes War — The Emoji Party Game" },
+      { title: "Memes War — The Meme Party Game" },
       {
         name: "description",
         content:
-          "Create a room, share the code, and battle your friends with emojis. Real-time party game for 3–20 players, no download needed.",
+          "Create a room, share the code, and battle your friends with memes. Real-time party game for 3–20 players, no download needed.",
       },
-      { property: "og:title", content: "Memes War — The Emoji Party Game" },
+      { property: "og:type", content: "website" },
+      { property: "og:title", content: "Memes War — The Meme Party Game" },
       {
         property: "og:description",
-        content: "Pick the emoji. Win the crowd. A real-time emoji party game for 3–20 players.",
+        content: "Pick the meme. Win the crowd. A real-time meme party game for 3–20 players.",
       },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Index,
